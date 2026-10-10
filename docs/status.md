@@ -20,3 +20,6 @@
 | redundant persistent configuration records | yes | host power-interruption tests | no |
 | signed update package tooling | yes, OpenSSL ECDSA-P256/SHA-256 | tamper/rollback integration test | n/a |
 | target signed firmware update | metadata/state policy only | host tests with verifier callback | no |
+| redundant boot-state records | yes | exhaustive interrupted-write tests | no |
+| development bootloader handoff | yes, slot A vector/MSP/VTOR handoff | ARM cross-build/vector report | no |
+| authenticated production bootloader | no | no | no |

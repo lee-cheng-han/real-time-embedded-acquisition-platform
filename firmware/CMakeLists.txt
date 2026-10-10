@@ -41,6 +41,8 @@ add_executable(drats_firmware
     "${FREERTOS}/portable/GCC/ARM_CM33_NTZ/non_secure/portasm.c"
     "${DRATS_ROOT}/common/src/acquisition.c"
     "${DRATS_ROOT}/common/src/block_pool.c"
+    "${DRATS_ROOT}/common/src/boot_record.c"
+    "${DRATS_ROOT}/common/src/boot_vector.c"
     "${DRATS_ROOT}/common/src/config_store.c"
     "${DRATS_ROOT}/common/src/config_protocol.c"
     "${DRATS_ROOT}/common/src/crc32c.c"

@@ -11,4 +11,6 @@ No resume bullet should use a row until its status is **validated**.
 | Achieved a stated rate/latency/jitter | raw trace, analysis script, conditions, commit | no measurement |
 | Recovered from SPI/overflow faults | injected-fault results and hardware logs | host policy and sensor fake-bus tested; hardware pending |
 | Built ECDSA-P256 signed update packaging and verification | OpenSSL tool, tamper/rollback integration test | host tooling validated; do not claim target secure boot |
+| Built power-loss-safe redundant boot policy | record codec/selection source and exhaustive cut-point test | host validated; physical flash pending |
+| Implemented Cortex-M application handoff | bootloader source, linker/map/vector report, board boot log | cross-build validated; board boot log pending |
 | Implemented signed, rollback-capable target update | bootloader source and reset-boundary test matrix | not implemented; do not claim |

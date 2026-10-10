@@ -16,7 +16,7 @@ The project advances through evidence gates:
 | Gate | Acceptance criterion | Current evidence |
 |---|---|---|
 | Host core | Strict C17 build; unit, integration, and injected-fault tests pass under ASan/UBSan | Implemented by the host build |
-| Target build | `arm-none-eabi-gcc` links application with reviewed vector and size reports | Implemented for simulated and sensor/watchdog variants; bootloader pending |
+| Target build | `arm-none-eabi-gcc` links application and development handoff with reviewed vector and size reports | Implemented for simulated and sensor/watchdog variants plus development bootloader |
 | Board bring-up | Clock, GPIO, monotonic timer, UART, SPI and GPDMA smoke tests pass on NUCLEO-H563ZI | Requires hardware |
 | Sustained acquisition | No loss at the configured rate for a 12-hour run; loss counters agree with injected gaps | Requires hardware |
 | Recovery | Each listed fault reaches a revalidated RUNNING or explicit DEGRADED state within its deadline | Host policy tests partially implemented; hardware injection remains |

@@ -19,6 +19,14 @@ collection, strict warnings, newlib-nano, and static FreeRTOS allocation. It pro
 ELF, BIN, HEX and linker map files. `scripts/check_size.py` enforces a 768 KiB flash-slot
 limit and the architecture's 128 KiB initial RAM budget, writing `size-report.json`.
 
+`scripts/build_bootloader.sh` builds a separate development handoff image at
+`0x08000000`. It occupies 1,332 flash bytes in the reserved 128 KiB partition and its
+post-build report verifies the initial stack pointer, Thumb reset vector, vector-table
+origin, reset symbol, and partition bound. It performs vector sanity checks only and is
+not the authenticated update bootloader described in `firmware_update.md`.
+`scripts/check_all.sh` also creates a validated, SHA-256-reported factory binary with
+the development bootloader at offset zero and application A at offset `0x20000`.
+
 The default application uses a configurable simulated six-channel backend. It exercises
 the block pool, processing handoff, telemetry encoder, and bounded USART3 TX/RX rings. The
 register-level UART mapping is USART3 on PD8/PD9 AF7, as specified for the Nucleo-144

@@ -20,6 +20,8 @@ claim physical hardware operation or hardware performance.
 - an optional ICM-42688-P backend using register-level SPI1, TIM2 timestamps, sensor
   identity checks, bounded timeouts, and revalidation after transfer failure;
 - reset-reason capture and an optional supervisor-gated independent watchdog;
+- a development bootloader that validates the application vector, clears interrupt
+  state, relocates VTOR, restores MSP, and hands off to application slot A;
 - unit, 100,000-sample integration, cross-language compatibility, and injected-fault
   tests under AddressSanitizer and UndefinedBehaviorSanitizer;
 - a hardware-grounded architecture, verification plan, update design, and claim ledger.
@@ -63,7 +65,7 @@ python3 host/cli/drats_image.py verify build/target/update.dimg public.pem
 ```
 
 The private key above is a development example and must not be used as a production
-root. Target-side Mbed TLS verification and flash boot selection remain pending.
+root. Target-side Mbed TLS verification and authenticated flash selection remain pending.
 
 ## Hardware plan
 
@@ -85,11 +87,14 @@ Build both host evidence and the target artifacts:
 
 Target artifacts are written under `build/target`; see
 [docs/target_build.md](docs/target_build.md) for their scope and limitations.
+The same check creates `build/factory/drats_factory.bin`, containing the development
+bootloader at flash offset zero and the simulated-backend application at offset
+`0x20000`, plus a SHA-256 layout report.
 
 ## Repository map
 
 ```text
-bootloader/       reserved for target boot/update implementation
+bootloader/       development handoff image at 0x08000000
 common/           portable protocol, ownership, acquisition, and fault policy
 firmware/         STM32/FreeRTOS application, startup, and register drivers
 host/             Python capture, export, and analysis tools
@@ -106,7 +111,8 @@ scripts/          reproducible build/test entry points
 3. CMSIS/startup/linker and FreeRTOS target build using `arm-none-eabi-gcc`.
 4. Validate the TIM3-triggered SPI GPDMA path on NUCLEO-H563ZI.
 5. Supervisor, watchdog, persistent diagnostics, and hardware fault injection.
-6. Established-library signed update with power-interruption tests.
+6. Add embedded signature verification and flash programming to the development
+   handoff and host-tested boot-record policy.
 7. Reproducible hardware endurance and timing report.
 
 ## Design constraints

@@ -14,7 +14,7 @@ an insufficient security counter. Keys and packages remain inside a temporary di
 | integration | 100,000 simulated samples retain order; decoded telemetry matches source; all blocks return FREE |
 | fault injection | delay, transfer error, saturation, corrupt packet, stale handle, and lost-completion policies reach their specified state/counter |
 | endurance | configured duration completes with counters internally consistent and sanitizer-clean |
-| target build | firmware ELF/map/bin artifacts build with zero warnings, fit partition limits, and pass vector/SP/reset-symbol checks |
+| target build | firmware and development-bootloader ELF/map/bin artifacts build with zero warnings, fit partition limits, and pass vector/SP/reset-symbol checks |
 | hardware | scripted smoke/endurance/fault runs produce raw machine-readable records and meet the gate in `architecture.md` |
 
 Host simulation cannot validate NVIC priorities, DMA request routing, ISR latency,
