@@ -1,0 +1,55 @@
+# Telemetry protocol version 1
+
+Every integer is little-endian. A stream receiver scans for ASCII `DRAT`, reads the
+payload length, bounds-checks it, and accepts the frame only when CRC32C validates.
+
+| Offset | Bytes | Field |
+|---:|---:|---|
+| 0 | 4 | synchronization word `DRAT` |
+| 4 | 1 | protocol version (`1`) |
+| 5 | 1 | message type |
+| 6 | 2 | flags |
+| 8 | 4 | frame sequence |
+| 12 | 8 | device monotonic timestamp in ns |
+| 20 | 2 | payload length, 0–1024 |
+| 22 | 2 | reserved, zero |
+| 24 | N | payload |
+| 24+N | 4 | CRC32C of header and payload |
+
+Message types are sample block (`1`), health (`2`), configuration set (`16`),
+configuration acknowledgement (`17`), and error (`127`). Unknown types are retained
+for forward compatibility. A version mismatch is rejected.
+
+## Sample block payload
+
+| Offset | Bytes | Field |
+|---:|---:|---|
+| 0 | 4 | first sample sequence |
+| 4 | 4 | nominal sample period in ns |
+| 8 | 2 | sample count |
+| 10 | 2 | channel count |
+| 12 | `count * channels * 2` | interleaved signed 16-bit samples |
+
+Frame sequence gaps detect missing frames. Sample sequence gaps independently detect
+loss before framing. Device timestamps are not compared directly with host time until
+a clock relationship has been measured.
+
+## Configuration-set payload
+
+| Offset | Bytes | Field |
+|---:|---:|---|
+| 0 | 4 | request identifier |
+| 4 | 4 | requested sample rate in Hz |
+| 8 | 2 | samples per block |
+| 10 | 1 | overflow policy: stop (`0`) or drop-newest (`1`) |
+| 11 | 1 | telemetry enabled (`0` or `1`) |
+
+The Python client can construct a validated configuration frame with `make-config`.
+Target-side reception and acknowledgement are not implemented yet, so this command
+currently produces a compatibility-test artifact rather than configuring a device.
+
+## Compatibility rules
+
+Version 1 decoders reject nonzero reserved fields, impossible lengths, bad CRC, and
+unsupported versions. They may skip unknown message types. New fields require a new
+version unless they fit a message-specific payload format with its own length/version.
