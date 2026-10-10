@@ -10,4 +10,5 @@ No resume bullet should use a row until its status is **validated**.
 | Used FreeRTOS ISR notifications and priority design | configuration/source plus runtime trace | target cross-build validated; runtime trace pending |
 | Achieved a stated rate/latency/jitter | raw trace, analysis script, conditions, commit | no measurement |
 | Recovered from SPI/overflow faults | injected-fault results and hardware logs | host policy and sensor fake-bus tested; hardware pending |
-| Implemented signed, rollback-capable update | bootloader source and reset-boundary test matrix | design only |
+| Built ECDSA-P256 signed update packaging and verification | OpenSSL tool, tamper/rollback integration test | host tooling validated; do not claim target secure boot |
+| Implemented signed, rollback-capable target update | bootloader source and reset-boundary test matrix | not implemented; do not claim |

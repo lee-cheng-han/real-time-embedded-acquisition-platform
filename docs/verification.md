@@ -4,6 +4,10 @@ Host checks cover portable logic with GCC warnings-as-errors, AddressSanitizer a
 UndefinedBehaviorSanitizer. CTest owns the test registry and can emit JUnit XML through
 `scripts/test.sh`. Tests use deterministic seeds and explicit assertions.
 
+The signed-image integration test generates an ephemeral P-256 key, verifies a valid
+package, then requires rejection of modified image bytes, authenticated metadata, and
+an insufficient security counter. Keys and packages remain inside a temporary directory.
+
 | Layer | Pass criterion |
 |---|---|
 | unit | ring/pool boundaries, legal ownership, CRC vectors, frame round trip/rejection, state and configuration transitions all pass |

@@ -30,7 +30,7 @@ in [docs/architecture.md](docs/architecture.md) are requirements, not achieved r
 ## Build and test on Linux/WSL
 
 Requirements are CMake 3.20+, a C17 GCC or Clang compiler, Make or Ninja, Bash, and
-Python 3. No Python packages are needed.
+Python 3, and OpenSSL 3.x. No Python packages are needed.
 
 ```sh
 cd /home/leech/real-time-embedded-acquisition-platform
@@ -51,6 +51,19 @@ python3 host/benchmarks/analyze.py build/host/capture.drat --svg build/host/jitt
 
 The analysis describes timestamps contained in the capture. Simulator output is not a
 hardware benchmark.
+
+Create and independently verify a signed update package:
+
+```sh
+openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-256 -out private.pem
+openssl pkey -in private.pem -pubout -out public.pem
+python3 host/cli/drats_image.py pack build/target/drats_firmware.bin private.pem \
+  build/target/update.dimg --version 1 0 0 --security-counter 1
+python3 host/cli/drats_image.py verify build/target/update.dimg public.pem
+```
+
+The private key above is a development example and must not be used as a production
+root. Target-side Mbed TLS verification and flash boot selection remain pending.
 
 ## Hardware plan
 

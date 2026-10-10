@@ -18,4 +18,5 @@
 | watchdog supervision policy | yes | host tests | no |
 | IWDG and reset-reason driver | selectable | cross-build | no |
 | redundant persistent configuration records | yes | host power-interruption tests | no |
-| signed firmware update | metadata/state policy only | host tests with verifier callback | no |
+| signed update package tooling | yes, OpenSSL ECDSA-P256/SHA-256 | tamper/rollback integration test | n/a |
+| target signed firmware update | metadata/state policy only | host tests with verifier callback | no |

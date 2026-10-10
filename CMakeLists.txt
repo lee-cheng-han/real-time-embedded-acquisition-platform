@@ -60,4 +60,9 @@ if(DRATS_BUILD_TESTS)
                      ${CMAKE_CURRENT_SOURCE_DIR}/tests/integration/test_host.py
                      $<TARGET_FILE:drats_sim>)
     set_tests_properties(integration_host PROPERTIES TIMEOUT 30)
+    find_program(OPENSSL_EXECUTABLE openssl REQUIRED)
+    add_test(NAME integration_signed_image
+             COMMAND ${Python3_EXECUTABLE}
+                     ${CMAKE_CURRENT_SOURCE_DIR}/tests/integration/test_signed_image.py)
+    set_tests_properties(integration_signed_image PROPERTIES TIMEOUT 30)
 endif()

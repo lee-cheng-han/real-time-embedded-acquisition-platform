@@ -1,5 +1,8 @@
 #include "drats/image.h"
 
+_Static_assert(sizeof(drats_image_metadata_t) == DRATS_IMAGE_METADATA_SIZE,
+               "image metadata wire layout changed");
+
 drats_status_t drats_image_metadata_validate(
     const drats_image_metadata_t *metadata,
     size_t slot_capacity,
