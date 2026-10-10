@@ -7,6 +7,7 @@
 | acquisition/fault policy | foundation | yes | no |
 | sensor simulation | yes | yes | n/a |
 | Python capture decode/export/analysis | yes | yes | no |
+| periodic health/reset/fault telemetry | yes | C/Python compatibility test and cross-build | no |
 | device configuration transport | yes | C/Python codec and target cross-build | no |
 | STM32 startup/linker/CMSIS | yes | cross-build | no |
 | FreeRTOS static task architecture | yes | cross-build | no |

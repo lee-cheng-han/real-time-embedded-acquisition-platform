@@ -14,6 +14,7 @@ add_library(drats_core STATIC
     common/src/crc32c.c
     common/src/fault_manager.c
     common/src/handle_queue.c
+    common/src/health_protocol.c
     common/src/icm42688.c
     common/src/image.c
     common/src/protocol.c

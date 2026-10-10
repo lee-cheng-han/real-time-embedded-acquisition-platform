@@ -1,6 +1,7 @@
 #include "drats/config_store.h"
 #include "drats/config_protocol.h"
 #include "drats/image.h"
+#include "drats/health_protocol.h"
 #include "drats/supervisor.h"
 #include "drats/update_manager.h"
 #include "test_support.h"
@@ -156,10 +157,34 @@ static int test_config_protocol(void) {
     return 0;
 }
 
+static int test_health_protocol(void) {
+    const drats_health_report_t report = {
+        .uptime_ms = 1000U,
+        .reset_flags = 0x20U,
+        .acquisition_state = 2U,
+        .blocks_completed = 31U,
+        .samples_completed = 992U,
+        .dropped_blocks = 1U,
+        .queue_overflows = 2U,
+        .dma_errors = 3U,
+        .dma_timeouts = 4U,
+        .sequence_gaps = 5U
+    };
+    uint8_t payload[DRATS_HEALTH_PAYLOAD_SIZE];
+    CHECK(drats_health_encode(&report, payload) == DRATS_OK);
+    drats_health_report_t decoded;
+    CHECK(drats_health_decode(payload, sizeof(payload), &decoded) == DRATS_OK);
+    CHECK(memcmp(&report, &decoded, sizeof(report)) == 0);
+    CHECK(drats_health_decode(payload, sizeof(payload) - 1U, &decoded) ==
+          DRATS_E_SIZE);
+    return 0;
+}
+
 int main(void) {
     CHECK(test_config_power_loss() == 0);
     CHECK(test_image_and_update() == 0);
     CHECK(test_supervisor() == 0);
     CHECK(test_config_protocol() == 0);
+    CHECK(test_health_protocol() == 0);
     return 0;
 }

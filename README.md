@@ -16,6 +16,8 @@ claim physical hardware operation or hardware performance.
 - deterministic six-channel simulated sensor pipeline;
 - dependency-free Python decoding, gap detection, CSV export, and timing analysis;
 - live POSIX serial capture and acknowledged runtime configuration;
+- periodic device health frames carrying reset flags, acquisition state, throughput,
+  loss, queue overflow, and DMA fault counters;
 - a cross-linked Cortex-M33 FreeRTOS image with five static tasks and USART3 telemetry;
 - an optional ICM-42688-P backend using register-level SPI1, TIM2 timestamps, sensor
   identity checks, bounded timeouts, and revalidation after transfer failure;

@@ -50,6 +50,7 @@ def encode_frame(frame: Frame) -> bytes:
 
 CONFIG_SET = struct.Struct("<IIHBB")
 CONFIG_ACK = struct.Struct("<IiIHBB")
+HEALTH = struct.Struct("<10I")
 
 
 def encode_config_set(*, frame_sequence: int, request_id: int,
@@ -76,6 +77,12 @@ def decode_config_ack(frame: Frame) -> tuple[int, int, int, int, int, bool]:
     if (status == 0 and overflow not in (0, 1)) or enabled not in (0, 1):
         raise ProtocolError("invalid acknowledged policy")
     return request_id, status, rate, block_size, overflow, bool(enabled)
+
+
+def decode_health(frame: Frame) -> tuple[int, ...]:
+    if frame.message_type != 2 or len(frame.payload) != HEALTH.size:
+        raise ProtocolError("not a health report")
+    return HEALTH.unpack(frame.payload)
 
 
 def decode_frame(candidate: bytes) -> Frame:

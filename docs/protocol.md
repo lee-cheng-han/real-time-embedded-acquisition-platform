@@ -44,6 +44,14 @@ a clock relationship has been measured.
 | 10 | 1 | overflow policy: stop (`0`) or drop-newest (`1`) |
 | 11 | 1 | telemetry enabled (`0` or `1`) |
 
+## Health payload
+
+The device emits message type `2` approximately once per second. Its ten little-endian
+`uint32` fields are uptime in milliseconds, RCC reset flags, acquisition state, blocks
+completed, samples completed, dropped blocks, queue overflows, DMA errors, DMA
+timeouts, and sequence gaps. Counters saturate at `UINT32_MAX` on the wire. Use
+`drats_cli.py health <capture>` to print the most recent report.
+
 The device applies valid configuration between acquisition blocks and responds only
 after the acquisition task has stopped, reconfigured, and restarted the engine. A
 nonzero acknowledgement status carries zeroed configuration fields. The Python client

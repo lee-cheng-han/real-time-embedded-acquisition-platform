@@ -12,7 +12,7 @@ import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from drats.protocol import (  # noqa: E402
-    ProtocolError, decode_config_ack, decode_sample_block, decode_stream,
+    ProtocolError, decode_config_ack, decode_health, decode_sample_block, decode_stream,
     encode_config_set
 )
 from drats.serial_transport import SerialTransport  # noqa: E402
@@ -28,9 +28,23 @@ def inspect_capture(path: Path) -> int:
         "first_sequence": frames[0].sequence if frames else None,
         "last_sequence": frames[-1].sequence if frames else None,
         "bytes": path.stat().st_size,
+        "health_reports": sum(frame.message_type == 2 for frame in frames),
     }
     print(json.dumps(result, sort_keys=True))
     return 0 if frames else 1
+
+
+def health_capture(path: Path) -> int:
+    reports = [decode_health(frame) for frame in decode_stream(path.read_bytes())
+               if frame.message_type == 2]
+    if not reports:
+        return 1
+    fields = ("uptime_ms", "reset_flags", "acquisition_state",
+              "blocks_completed", "samples_completed", "dropped_blocks",
+              "queue_overflows", "dma_errors", "dma_timeouts",
+              "sequence_gaps")
+    print(json.dumps(dict(zip(fields, reports[-1])), sort_keys=True))
+    return 0
 
 
 def export_capture(path: Path, output: Path) -> int:
@@ -109,6 +123,8 @@ def main() -> int:
     export_parser = sub.add_parser("export")
     export_parser.add_argument("capture", type=Path)
     export_parser.add_argument("output", type=Path)
+    health_parser = sub.add_parser("health")
+    health_parser.add_argument("capture", type=Path)
     config_parser = sub.add_parser("make-config")
     config_parser.add_argument("output", type=Path)
     config_parser.add_argument("--rate", type=int, required=True)
@@ -135,6 +151,8 @@ def main() -> int:
     args = parser.parse_args()
     if args.command == "inspect":
         return inspect_capture(args.capture)
+    if args.command == "health":
+        return health_capture(args.capture)
     if args.command == "make-config":
         frame = encode_config_set(
             frame_sequence=0, request_id=args.request_id,

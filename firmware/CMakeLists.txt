@@ -48,6 +48,7 @@ add_executable(drats_firmware
     "${DRATS_ROOT}/common/src/crc32c.c"
     "${DRATS_ROOT}/common/src/fault_manager.c"
     "${DRATS_ROOT}/common/src/handle_queue.c"
+    "${DRATS_ROOT}/common/src/health_protocol.c"
     "${DRATS_ROOT}/common/src/icm42688.c"
     "${DRATS_ROOT}/common/src/image.c"
     "${DRATS_ROOT}/common/src/protocol.c"

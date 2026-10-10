@@ -9,8 +9,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "host"))
 
 from drats.protocol import (  # noqa: E402
-    CONFIG_ACK, CONFIG_SET, Frame, decode_config_ack, decode_sample_block,
-    decode_stream, encode_frame, encode_config_set
+    CONFIG_ACK, CONFIG_SET, HEALTH, Frame, decode_config_ack, decode_health,
+    decode_sample_block, decode_stream, encode_frame, encode_config_set
 )
 
 
@@ -42,6 +42,11 @@ def main() -> int:
     rejected_ack = Frame(17, 0, 46, 0, CONFIG_ACK.pack(10, -1, 0, 0, 0, 0))
     decoded_rejection = list(decode_stream(encode_frame(rejected_ack)))[0]
     assert decode_config_ack(decoded_rejection) == (10, -1, 0, 0, 0, False)
+    health_values = (1000, 0x20, 2, 31, 992, 1, 1, 2, 3, 4)
+    health_frame = Frame(2, 0, 47, 1_000_000_000,
+                         HEALTH.pack(*health_values))
+    decoded_health = list(decode_stream(encode_frame(health_frame)))[0]
+    assert decode_health(decoded_health) == health_values
     return 0
 
 

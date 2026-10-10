@@ -6,6 +6,7 @@
 #include "drats/acquisition.h"
 #include "drats/config_protocol.h"
 #include "drats/handle_queue.h"
+#include "drats/health_protocol.h"
 #include "drats/supervisor.h"
 #include "interrupts.h"
 #include "uart3.h"
@@ -44,10 +45,13 @@ static drats_acquisition_t acquisition;
 
 static StaticQueue_t config_queue_object;
 static StaticQueue_t ack_queue_object;
+static StaticQueue_t health_queue_object;
 static uint8_t config_queue_storage[2U * sizeof(drats_config_command_t)];
 static uint8_t ack_queue_storage[4U * sizeof(drats_config_ack_t)];
+static uint8_t health_queue_storage[sizeof(drats_health_report_t)];
 static QueueHandle_t config_queue;
 static QueueHandle_t ack_queue;
+static QueueHandle_t health_queue;
 static drats_stream_decoder_t command_decoder;
 static uint32_t tx_frame_sequence;
 static atomic_bool telemetry_enabled;
@@ -143,6 +147,35 @@ static drats_status_t transmit_ack(const drats_config_ack_t *ack) {
     return status;
 }
 
+static drats_status_t transmit_health(const drats_health_report_t *report) {
+    uint8_t payload[DRATS_HEALTH_PAYLOAD_SIZE];
+    drats_status_t status = drats_health_encode(report, payload);
+    if (status != DRATS_OK) {
+        return status;
+    }
+    const drats_frame_header_t header = {
+        .version = DRATS_PROTOCOL_VERSION,
+        .type = DRATS_MSG_HEALTH,
+        .sequence = tx_frame_sequence,
+        .timestamp_ns = drats_tim2_now_us() * UINT64_C(1000),
+        .payload_length = DRATS_HEALTH_PAYLOAD_SIZE
+    };
+    size_t frame_length = 0U;
+    status = drats_frame_encode(&header, payload, telemetry_frame,
+                                sizeof(telemetry_frame), &frame_length);
+    if (status == DRATS_OK) {
+        status = drats_uart3_write(telemetry_frame, frame_length);
+        if (status == DRATS_OK) {
+            ++tx_frame_sequence;
+        }
+    }
+    return status;
+}
+
+static uint32_t saturate_u64(uint64_t value) {
+    return value > UINT32_MAX ? UINT32_MAX : (uint32_t)value;
+}
+
 static void command_received(const drats_frame_header_t *header,
                              const uint8_t *payload,
                              void *context) {
@@ -193,8 +226,32 @@ static void acquisition_task(void *argument) {
 #if !defined(DRATS_REAL_SENSOR)
     uint32_t synthetic_value = 0U;
 #endif
+    TickType_t last_health = xTaskGetTickCount();
     for (;;) {
         heartbeat(DRATS_TASK_ACQUISITION);
+        const TickType_t now = xTaskGetTickCount();
+        if ((now - last_health) >= pdMS_TO_TICKS(1000U)) {
+            const drats_health_report_t report = {
+                .uptime_ms = (uint32_t)now,
+                .reset_flags = startup_reset_flags,
+                .acquisition_state = (uint32_t)acquisition.state,
+                .blocks_completed = saturate_u64(
+                    acquisition.counters.blocks_completed),
+                .samples_completed = saturate_u64(
+                    acquisition.counters.samples_completed),
+                .dropped_blocks = saturate_u64(
+                    acquisition.counters.dropped_blocks),
+                .queue_overflows = saturate_u64(
+                    acquisition.counters.queue_overflows),
+                .dma_errors = saturate_u64(acquisition.counters.dma_errors),
+                .dma_timeouts = saturate_u64(
+                    acquisition.counters.dma_timeouts),
+                .sequence_gaps = saturate_u64(
+                    acquisition.counters.sequence_gaps)
+            };
+            (void)xQueueOverwrite(health_queue, &report);
+            last_health = now;
+        }
         drats_config_command_t request;
         if (xQueueReceive(config_queue, &request, 0U) == pdPASS) {
 #if defined(DRATS_REAL_SENSOR)
@@ -306,6 +363,8 @@ static void telemetry_task(void *argument) {
     drats_block_handle_t pending = {0};
     bool has_ack = false;
     drats_config_ack_t pending_ack = {0};
+    bool has_health = false;
+    drats_health_report_t pending_health = {0};
     for (;;) {
         heartbeat(DRATS_TASK_TELEMETRY);
         if (!has_ack &&
@@ -315,6 +374,17 @@ static void telemetry_task(void *argument) {
         if (has_ack) {
             if (transmit_ack(&pending_ack) == DRATS_OK) {
                 has_ack = false;
+            }
+            vTaskDelay(pdMS_TO_TICKS(1U));
+            continue;
+        }
+        if (!has_health &&
+            (xQueueReceive(health_queue, &pending_health, 0U) == pdPASS)) {
+            has_health = true;
+        }
+        if (has_health) {
+            if (transmit_health(&pending_health) == DRATS_OK) {
+                has_health = false;
             }
             vTaskDelay(pdMS_TO_TICKS(1U));
             continue;
@@ -406,7 +476,11 @@ int main(void) {
                                       &config_queue_object);
     ack_queue = xQueueCreateStatic(4U, sizeof(drats_config_ack_t),
                                    ack_queue_storage, &ack_queue_object);
-    if ((config_queue == NULL) || (ack_queue == NULL)) {
+    health_queue = xQueueCreateStatic(1U, sizeof(drats_health_report_t),
+                                      health_queue_storage,
+                                      &health_queue_object);
+    if ((config_queue == NULL) || (ack_queue == NULL) ||
+        (health_queue == NULL)) {
         drats_assert_failed(__FILE__, __LINE__);
     }
     const drats_acq_config_t acquisition_config = {
