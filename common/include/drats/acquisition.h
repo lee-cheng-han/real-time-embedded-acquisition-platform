@@ -54,6 +54,8 @@ drats_status_t drats_acq_init(drats_acquisition_t *acq,
                               drats_handle_queue_t *ready_queue,
                               const drats_acq_config_t *config);
 drats_status_t drats_acq_start(drats_acquisition_t *acq);
+drats_status_t drats_acq_reconfigure(drats_acquisition_t *acq,
+                                     const drats_acq_config_t *config);
 drats_status_t drats_acq_arm_next(drats_acquisition_t *acq,
                                   drats_sample_block_t **block);
 drats_status_t drats_acq_complete_dma(drats_acquisition_t *acq,

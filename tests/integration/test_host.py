@@ -9,7 +9,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "host"))
 
 from drats.protocol import (  # noqa: E402
-    CONFIG_SET, decode_sample_block, decode_stream, encode_config_set
+    CONFIG_ACK, CONFIG_SET, Frame, decode_config_ack, decode_sample_block,
+    decode_stream, encode_frame, encode_config_set
 )
 
 
@@ -34,6 +35,13 @@ def main() -> int:
     config_frame = list(decode_stream(config))[0]
     assert config_frame.message_type == 16 and config_frame.sequence == 44
     assert CONFIG_SET.unpack(config_frame.payload) == (9, 20_000, 16, 1, 1)
+    ack_frame = Frame(17, 0, 45, 0,
+                      CONFIG_ACK.pack(9, 0, 20_000, 16, 1, 1))
+    decoded_ack = list(decode_stream(encode_frame(ack_frame)))[0]
+    assert decode_config_ack(decoded_ack) == (9, 0, 20_000, 16, 1, True)
+    rejected_ack = Frame(17, 0, 46, 0, CONFIG_ACK.pack(10, -1, 0, 0, 0, 0))
+    decoded_rejection = list(decode_stream(encode_frame(rejected_ack)))[0]
+    assert decode_config_ack(decoded_rejection) == (10, -1, 0, 0, 0, False)
     return 0
 
 

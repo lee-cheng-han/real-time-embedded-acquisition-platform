@@ -23,12 +23,19 @@ TrustZone, lifecycle, and debug policy. CRC alone is only corruption detection.
 
 ## Purchase and wiring plan
 
-Required: NUCLEO-H563ZI, a 3.3 V SPI sensor/breakout with a documented maximum SPI
-clock, jumper wires, and USB cable. A logic analyzer or oscilloscope is strongly
-recommended for independent jitter and ISR-latency measurements. The exact sensor is
-deliberately not selected in software yet; the real driver contract is separated from
-the simulator and will be bound after choosing hardware.
+Required: NUCLEO-H563ZI, a 3.3 V ICM-42688-P breakout, jumper wires, and USB cable. A
+logic analyzer or oscilloscope is strongly recommended for independent jitter and
+ISR-latency measurements. TDK specifies a 24 MHz maximum SPI clock; firmware limits
+SPI1 to 16 MHz and verifies the `WHO_AM_I` value before enabling acquisition.
 
-Before energizing a sensor, record its supply voltage, SPI mode, maximum bus rate,
-chip-select timing, startup delay, and pin mapping here. Never infer Arduino-header
-labels to MCU alternate functions without checking the MB1404 schematic.
+Proposed wiring is SPI1 SCK/MISO/MOSI on PA5/PA6/PA7 (AF5), software chip select on
+PD14, 3.3 V, and ground. PD14 corresponds to the intended Arduino D10 routing, but this
+mapping must be checked against the exact MB1404 board revision before power-up.
+
+Primary sensor references:
+
+- [ICM-42688-P product page](https://www.invensense.tdk.com/en-us/products/6-axis/icm-42688-p/)
+- [ICM-42688-P datasheet](https://invensense.tdk.com/wp-content/uploads/2020/04/ds-000347_icm-42688-p-datasheet.pdf)
+
+Before energizing the sensor, verify supply voltage, SPI mode 0, chip-select timing,
+and pin mapping against the breakout and MB1404 schematics.

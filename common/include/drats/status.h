@@ -12,7 +12,9 @@ typedef enum {
     DRATS_E_CRC = -7,
     DRATS_E_FORMAT = -8,
     DRATS_E_VERSION = -9,
-    DRATS_E_AUTH = -10
+    DRATS_E_AUTH = -10,
+    DRATS_E_TIMEOUT = -11,
+    DRATS_E_IO = -12
 } drats_status_t;
 
 #endif

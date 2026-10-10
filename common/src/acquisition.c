@@ -39,6 +39,17 @@ drats_status_t drats_acq_start(drats_acquisition_t *acq) {
     return DRATS_OK;
 }
 
+drats_status_t drats_acq_reconfigure(drats_acquisition_t *acq,
+                                     const drats_acq_config_t *config) {
+    if ((acq == NULL) || (acq->state != DRATS_ACQ_STOPPED) ||
+        acq->has_active_dma ||
+        (drats_acq_config_validate(config) != DRATS_OK)) {
+        return DRATS_E_STATE;
+    }
+    acq->config = *config;
+    return DRATS_OK;
+}
+
 drats_status_t drats_acq_arm_next(drats_acquisition_t *acq,
                                   drats_sample_block_t **block) {
     if ((acq == NULL) || (block == NULL) ||

@@ -1,10 +1,10 @@
 # DRATS — Deterministic Real-Time Acquisition & Telemetry System
 
 DRATS is an embedded acquisition platform for the STM32H563ZI. Its end-to-end workload
-is timer-triggered SPI sampling, DMA into explicitly owned fixed buffers, bounded
+is periodic SPI sampling into explicitly owned fixed buffers, bounded
 processing, and CRC-protected binary telemetry. This repository currently delivers the
-host-verifiable core and simulator. It does **not** yet claim working STM32 firmware or
-hardware performance.
+host-verifiable core, simulator, and cross-compiled STM32 firmware. It does **not**
+claim physical hardware operation or hardware performance.
 
 ## What works today
 
@@ -15,7 +15,11 @@ hardware performance.
 - versioned little-endian telemetry frames with CRC32C;
 - deterministic six-channel simulated sensor pipeline;
 - dependency-free Python decoding, gap detection, CSV export, and timing analysis;
+- live POSIX serial capture and acknowledged runtime configuration;
 - a cross-linked Cortex-M33 FreeRTOS image with five static tasks and USART3 telemetry;
+- an optional ICM-42688-P backend using register-level SPI1, TIM2 timestamps, sensor
+  identity checks, bounded timeouts, and revalidation after transfer failure;
+- reset-reason capture and an optional supervisor-gated independent watchdog;
 - unit, 100,000-sample integration, cross-language compatibility, and injected-fault
   tests under AddressSanitizer and UndefinedBehaviorSanitizer;
 - a hardware-grounded architecture, verification plan, update design, and claim ledger.
@@ -53,13 +57,12 @@ hardware benchmark.
 The baseline is the NUCLEO-H563ZI, selected for its STM32H563ZIT6 (250 MHz Cortex-M33,
 2 MiB dual-bank flash, 640 KiB SRAM), timer/SPI/GPDMA resources, and onboard ST-LINK
 with virtual COM. See [docs/hardware.md](docs/hardware.md) for primary ST references
-and caveats. The intended first sensor is a 3.3 V SPI breakout selected after its timing
-requirements and pin routing are reviewed.
+and caveats. The selected sensor is a 3.3 V ICM-42688-P SPI breakout.
 
 The ARM cross compiler is installed and target startup, linker placement, FreeRTOS
 static tasks, fault capture, and an interrupt-driven USART3 telemetry path build.
-No board is connected, so physical execution, SPI/GPDMA acquisition, watchdog reset,
-flash update, and timing measurements remain subsequent milestones.
+No board is connected, so physical execution, timer-triggered GPDMA acquisition,
+watchdog-reset validation, flash update, and timing measurements remain blocked.
 
 Build both host evidence and the target artifacts:
 
@@ -73,9 +76,9 @@ Target artifacts are written under `build/target`; see
 ## Repository map
 
 ```text
-bootloader/       target update implementation (planned)
+bootloader/       reserved for target boot/update implementation
 common/           portable protocol, ownership, acquisition, and fault policy
-firmware/         STM32/FreeRTOS target integration (planned)
+firmware/         STM32/FreeRTOS application, startup, and register drivers
 host/             Python capture, export, and analysis tools
 simulation/       deterministic C sensor/pipeline simulator
 tests/            unit, integration, fault-injection, and endurance tests
@@ -88,7 +91,7 @@ scripts/          reproducible build/test entry points
 1. Portable core — implemented and host-tested.
 2. Pin/clock/DMA design in CubeMX, checked against board schematic, DS14121 and RM0481.
 3. CMSIS/startup/linker and FreeRTOS target build using `arm-none-eabi-gcc`.
-4. Timer-triggered SPI GPDMA plus UART DMA on NUCLEO-H563ZI.
+4. Validate the TIM3-triggered SPI GPDMA path on NUCLEO-H563ZI.
 5. Supervisor, watchdog, persistent diagnostics, and hardware fault injection.
 6. Established-library signed update with power-interruption tests.
 7. Reproducible hardware endurance and timing report.

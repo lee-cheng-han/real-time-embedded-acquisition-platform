@@ -44,9 +44,22 @@ a clock relationship has been measured.
 | 10 | 1 | overflow policy: stop (`0`) or drop-newest (`1`) |
 | 11 | 1 | telemetry enabled (`0` or `1`) |
 
-The Python client can construct a validated configuration frame with `make-config`.
-Target-side reception and acknowledgement are not implemented yet, so this command
-currently produces a compatibility-test artifact rather than configuring a device.
+The device applies valid configuration between acquisition blocks and responds only
+after the acquisition task has stopped, reconfigured, and restarted the engine. A
+nonzero acknowledgement status carries zeroed configuration fields. The Python client
+supports both offline frame generation with `make-config` and live serial operation
+with `configure`.
+
+## Configuration acknowledgement payload
+
+| Offset | Bytes | Field |
+|---:|---:|---|
+| 0 | 4 | request identifier |
+| 4 | 4 | signed status code |
+| 8 | 4 | applied sample rate in Hz |
+| 12 | 2 | applied samples per block |
+| 14 | 1 | applied overflow policy |
+| 15 | 1 | telemetry enabled |
 
 ## Compatibility rules
 

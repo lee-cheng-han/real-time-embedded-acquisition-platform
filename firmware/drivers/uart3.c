@@ -6,11 +6,15 @@
 #include <stdatomic.h>
 
 #define UART_TX_CAPACITY 2048U
+#define UART_RX_CAPACITY 512U
 #define UART_ERROR_MASK (USART_ISR_PE | USART_ISR_FE | USART_ISR_NE | USART_ISR_ORE)
 
 static uint8_t tx_storage[UART_TX_CAPACITY];
 static atomic_size_t tx_head;
 static atomic_size_t tx_tail;
+static uint8_t rx_storage[UART_RX_CAPACITY];
+static atomic_size_t rx_head;
+static atomic_size_t rx_tail;
 static drats_uart3_counters_t counters;
 static bool initialized;
 
@@ -26,6 +30,8 @@ drats_status_t drats_uart3_init(uint32_t peripheral_clock_hz,
     }
     atomic_init(&tx_head, 0U);
     atomic_init(&tx_tail, 0U);
+    atomic_init(&rx_head, 0U);
+    atomic_init(&rx_tail, 0U);
     counters = (drats_uart3_counters_t){0};
 
     RCC->AHB2ENR |= RCC_AHB2ENR_GPIODEN;
@@ -58,7 +64,8 @@ drats_status_t drats_uart3_init(uint32_t peripheral_clock_hz,
     USART3->PRESC = 0U;
     USART3->BRR = (peripheral_clock_hz + (baud_rate / 2U)) / baud_rate;
     USART3->ICR = UINT32_MAX;
-    USART3->CR1 = USART_CR1_TE | USART_CR1_RE | USART_CR1_UE;
+    USART3->CR1 = USART_CR1_TE | USART_CR1_RE |
+                  USART_CR1_RXNEIE_RXFNEIE | USART_CR1_UE;
 
     NVIC_SetPriority(USART3_IRQn, 7U);
     NVIC_ClearPendingIRQ(USART3_IRQn);
@@ -99,12 +106,39 @@ drats_status_t drats_uart3_write(const uint8_t *data, size_t length) {
     return DRATS_OK;
 }
 
+size_t drats_uart3_read(uint8_t *output, size_t capacity) {
+    if ((output == NULL) || (capacity == 0U) || !initialized) {
+        return 0U;
+    }
+    size_t count = 0U;
+    size_t tail = atomic_load_explicit(&rx_tail, memory_order_relaxed);
+    const size_t head = atomic_load_explicit(&rx_head, memory_order_acquire);
+    while ((tail != head) && (count < capacity)) {
+        output[count++] = rx_storage[tail];
+        tail = (tail + 1U) % UART_RX_CAPACITY;
+    }
+    atomic_store_explicit(&rx_tail, tail, memory_order_release);
+    return count;
+}
+
 void drats_uart3_irq(void) {
     const uint32_t status = USART3->ISR;
     if ((status & UART_ERROR_MASK) != 0U) {
         USART3->ICR = USART_ICR_PECF | USART_ICR_FECF |
                       USART_ICR_NECF | USART_ICR_ORECF;
         ++counters.hardware_errors;
+    }
+    if ((status & USART_ISR_RXNE_RXFNE) != 0U) {
+        const uint8_t received = (uint8_t)USART3->RDR;
+        size_t head = atomic_load_explicit(&rx_head, memory_order_relaxed);
+        const size_t next = (head + 1U) % UART_RX_CAPACITY;
+        if (next != atomic_load_explicit(&rx_tail, memory_order_acquire)) {
+            rx_storage[head] = received;
+            atomic_store_explicit(&rx_head, next, memory_order_release);
+            ++counters.bytes_received;
+        } else {
+            ++counters.receive_overflows;
+        }
     }
     if ((status & USART_ISR_TXE_TXFNF) != 0U) {
         size_t tail = atomic_load_explicit(&tx_tail, memory_order_relaxed);

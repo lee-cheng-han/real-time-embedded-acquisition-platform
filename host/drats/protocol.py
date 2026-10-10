@@ -49,6 +49,7 @@ def encode_frame(frame: Frame) -> bytes:
 
 
 CONFIG_SET = struct.Struct("<IIHBB")
+CONFIG_ACK = struct.Struct("<IiIHBB")
 
 
 def encode_config_set(*, frame_sequence: int, request_id: int,
@@ -63,6 +64,18 @@ def encode_config_set(*, frame_sequence: int, request_id: int,
     payload = CONFIG_SET.pack(request_id, sample_rate_hz, samples_per_block,
                               overflow_policy, int(telemetry_enabled))
     return encode_frame(Frame(16, 0, frame_sequence, 0, payload))
+
+
+def decode_config_ack(frame: Frame) -> tuple[int, int, int, int, int, bool]:
+    if frame.message_type != 17 or len(frame.payload) != CONFIG_ACK.size:
+        raise ProtocolError("not a configuration acknowledgement")
+    request_id, status, rate, block_size, overflow, enabled = CONFIG_ACK.unpack(
+        frame.payload)
+    if status == 0 and (not 1 <= rate <= 50_000 or not 1 <= block_size <= 32):
+        raise ProtocolError("invalid acknowledged configuration")
+    if (status == 0 and overflow not in (0, 1)) or enabled not in (0, 1):
+        raise ProtocolError("invalid acknowledged policy")
+    return request_id, status, rate, block_size, overflow, bool(enabled)
 
 
 def decode_frame(candidate: bytes) -> Frame:

@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
 project(drats_firmware LANGUAGES C ASM)
 
+option(DRATS_REAL_SENSOR "Acquire from an ICM-42688-P on SPI1" OFF)
+option(DRATS_ENABLE_WATCHDOG "Enable the independent hardware watchdog" OFF)
+
 get_filename_component(DRATS_ROOT "${CMAKE_CURRENT_LIST_DIR}/.." ABSOLUTE)
 set(DRATS_DEPS "${DRATS_ROOT}/build/deps" CACHE PATH "Downloaded dependencies")
 set(CMSIS_CORE "${DRATS_DEPS}/STM32CubeH5/Drivers/CMSIS/Include")
@@ -22,7 +25,11 @@ set(COMMON_WARNINGS
 add_executable(drats_firmware
     app/main.c
     app/interrupts.c
+    drivers/spi1.c
+    drivers/sample_timer.c
+    drivers/tim2.c
     drivers/uart3.c
+    drivers/watchdog.c
     startup/fault_handlers.c
     startup/syscalls.c
     "${CMSIS_DEVICE}/Source/Templates/gcc/startup_stm32h563xx.s"
@@ -35,12 +42,15 @@ add_executable(drats_firmware
     "${DRATS_ROOT}/common/src/acquisition.c"
     "${DRATS_ROOT}/common/src/block_pool.c"
     "${DRATS_ROOT}/common/src/config_store.c"
+    "${DRATS_ROOT}/common/src/config_protocol.c"
     "${DRATS_ROOT}/common/src/crc32c.c"
     "${DRATS_ROOT}/common/src/fault_manager.c"
     "${DRATS_ROOT}/common/src/handle_queue.c"
+    "${DRATS_ROOT}/common/src/icm42688.c"
     "${DRATS_ROOT}/common/src/image.c"
     "${DRATS_ROOT}/common/src/protocol.c"
     "${DRATS_ROOT}/common/src/supervisor.c"
+    "${DRATS_ROOT}/common/src/stream_decoder.c"
     "${DRATS_ROOT}/common/src/update_manager.c"
 )
 
@@ -57,6 +67,8 @@ target_include_directories(drats_firmware PRIVATE
 target_compile_definitions(drats_firmware PRIVATE
     STM32H563xx
     VECT_TAB_OFFSET=0x20000U
+    $<$<BOOL:${DRATS_REAL_SENSOR}>:DRATS_REAL_SENSOR=1>
+    $<$<BOOL:${DRATS_ENABLE_WATCHDOG}>:DRATS_ENABLE_WATCHDOG=1>
 )
 target_compile_options(drats_firmware PRIVATE
     ${CPU_FLAGS}

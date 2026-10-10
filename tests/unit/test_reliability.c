@@ -1,4 +1,5 @@
 #include "drats/config_store.h"
+#include "drats/config_protocol.h"
 #include "drats/image.h"
 #include "drats/supervisor.h"
 #include "drats/update_manager.h"
@@ -110,9 +111,55 @@ static int test_supervisor(void) {
     return 0;
 }
 
+static int test_config_protocol(void) {
+    const uint8_t command_payload[DRATS_CONFIG_COMMAND_SIZE] = {
+        9U, 0U, 0U, 0U,
+        0x20U, 0x4eU, 0U, 0U,
+        16U, 0U, 1U, 1U
+    };
+    drats_config_command_t command;
+    CHECK(drats_config_command_decode(command_payload, sizeof(command_payload),
+                                      &command) == DRATS_OK);
+    CHECK(command.request_id == 9U);
+    CHECK(command.config.sample_rate_hz == 20000U);
+    CHECK(command.config.samples_per_block == 16U);
+    CHECK(command.config.overflow_policy == DRATS_OVERFLOW_DROP_NEWEST);
+    CHECK(command.telemetry_enabled);
+
+    drats_config_ack_t ack = {
+        .request_id = command.request_id,
+        .status = DRATS_E_FULL,
+        .config = command.config,
+        .telemetry_enabled = command.telemetry_enabled
+    };
+    uint8_t encoded[DRATS_CONFIG_ACK_SIZE];
+    CHECK(drats_config_ack_encode(&ack, encoded) == DRATS_OK);
+    drats_config_ack_t decoded;
+    CHECK(drats_config_ack_decode(encoded, sizeof(encoded), &decoded) == DRATS_OK);
+    CHECK(decoded.request_id == ack.request_id);
+    CHECK(decoded.status == DRATS_E_FULL);
+    CHECK(decoded.config.sample_rate_hz == 20000U);
+    const drats_config_ack_t rejected = {
+        .request_id = 5U,
+        .status = DRATS_E_ARGUMENT,
+        .config = {0},
+        .telemetry_enabled = false
+    };
+    CHECK(drats_config_ack_encode(&rejected, encoded) == DRATS_OK);
+    CHECK(drats_config_ack_decode(encoded, sizeof(encoded), &decoded) == DRATS_OK);
+    CHECK(decoded.status == DRATS_E_ARGUMENT);
+    uint8_t invalid[DRATS_CONFIG_COMMAND_SIZE];
+    memcpy(invalid, command_payload, sizeof(invalid));
+    invalid[11] = 2U;
+    CHECK(drats_config_command_decode(invalid, sizeof(invalid), &command) ==
+          DRATS_E_ARGUMENT);
+    return 0;
+}
+
 int main(void) {
     CHECK(test_config_power_loss() == 0);
     CHECK(test_image_and_update() == 0);
     CHECK(test_supervisor() == 0);
+    CHECK(test_config_protocol() == 0);
     return 0;
 }

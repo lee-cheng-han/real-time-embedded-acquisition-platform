@@ -8,12 +8,15 @@ add_library(drats_core STATIC
     common/src/acquisition.c
     common/src/block_pool.c
     common/src/config_store.c
+    common/src/config_protocol.c
     common/src/crc32c.c
     common/src/fault_manager.c
     common/src/handle_queue.c
+    common/src/icm42688.c
     common/src/image.c
     common/src/protocol.c
     common/src/supervisor.c
+    common/src/stream_decoder.c
     common/src/update_manager.c
 )
 target_include_directories(drats_core PUBLIC common/include)
@@ -46,6 +49,7 @@ if(DRATS_BUILD_TESTS)
     drats_add_test(unit_core tests/unit/test_core.c)
     drats_add_test(unit_reliability tests/unit/test_reliability.c)
     drats_add_test(unit_protocol_fuzz tests/unit/test_protocol_fuzz.c)
+    drats_add_test(unit_stream_sensor tests/unit/test_stream_sensor.c)
     drats_add_test(integration_pipeline tests/integration/test_pipeline.c)
     drats_add_test(fault_injection tests/fault_injection/test_faults.c)
     drats_add_test(endurance_pipeline tests/endurance/test_endurance.c)

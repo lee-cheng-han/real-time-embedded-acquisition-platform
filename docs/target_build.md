@@ -19,12 +19,19 @@ collection, strict warnings, newlib-nano, and static FreeRTOS allocation. It pro
 ELF, BIN, HEX and linker map files. `scripts/check_size.py` enforces a 768 KiB flash-slot
 limit and the architecture's 128 KiB initial RAM budget, writing `size-report.json`.
 
-The current application uses a 1 ksample/s simulated six-channel backend. It exercises
-the block pool, processing handoff, telemetry encoder, and bounded USART3 TX ring. The
+The default application uses a configurable simulated six-channel backend. It exercises
+the block pool, processing handoff, telemetry encoder, and bounded USART3 TX/RX rings. The
 register-level UART mapping is USART3 on PD8/PD9 AF7, as specified for the Nucleo-144
 COM1 port by ST's board support package. No physical execution has been claimed.
 
-GPDMA channel 0 has a conservative ISR shell that snapshots and clears all channel
-status flags before notifying the acquisition task. Channel configuration, DMAMUX
-request selection, SPI setup, timer trigger routing, and sensor chip-select timing are
-not implemented until the actual sensor is selected and the request routing is checked.
+Set `DRATS_REAL_SENSOR=ON` to build the ICM-42688-P backend and
+`DRATS_ENABLE_WATCHDOG=ON` to include IWDG activation. `scripts/check_all.sh` builds
+this combination separately under `build/target-sensor`. It samples the sensor at
+1 ksample/s from TIM3 notifications through bounded register-level SPI/GPDMA transfers
+and timestamps blocks with a 1 MHz TIM2 counter. Timer and DMA completion use separate
+indexed task notifications. The path is cross-compiled only and needs board validation.
+
+GPDMA channels 0 and 1 are configured for SPI1 RX/TX requests and notify the acquisition
+task after completion or error. TIM3 drives the acquisition cadence; the fixed block
+pool provides multiple owned buffers rather than GPDMA linked-list double buffering.
+SPI setup and chip-select timing have not been electrically checked.
