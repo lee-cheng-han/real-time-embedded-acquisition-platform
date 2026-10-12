@@ -3,6 +3,7 @@ project(drats_firmware LANGUAGES C ASM)
 
 option(DRATS_REAL_SENSOR "Acquire from an ICM-42688-P on SPI1" OFF)
 option(DRATS_ENABLE_WATCHDOG "Enable the independent hardware watchdog" OFF)
+option(DRATS_ENABLE_TRACE "Record fixed-size timing events for SWD extraction" OFF)
 
 get_filename_component(DRATS_ROOT "${CMAKE_CURRENT_LIST_DIR}/.." ABSOLUTE)
 set(DRATS_DEPS "${DRATS_ROOT}/build/deps" CACHE PATH "Downloaded dependencies")
@@ -25,6 +26,7 @@ set(COMMON_WARNINGS
 add_executable(drats_firmware
     app/main.c
     app/interrupts.c
+    app/timing_trace.c
     drivers/spi1.c
     drivers/sample_timer.c
     drivers/tim2.c
@@ -54,6 +56,7 @@ add_executable(drats_firmware
     "${DRATS_ROOT}/common/src/protocol.c"
     "${DRATS_ROOT}/common/src/supervisor.c"
     "${DRATS_ROOT}/common/src/stream_decoder.c"
+    "${DRATS_ROOT}/common/src/trace.c"
     "${DRATS_ROOT}/common/src/update_manager.c"
 )
 
@@ -72,6 +75,7 @@ target_compile_definitions(drats_firmware PRIVATE
     VECT_TAB_OFFSET=0x20000U
     $<$<BOOL:${DRATS_REAL_SENSOR}>:DRATS_REAL_SENSOR=1>
     $<$<BOOL:${DRATS_ENABLE_WATCHDOG}>:DRATS_ENABLE_WATCHDOG=1>
+    $<$<BOOL:${DRATS_ENABLE_TRACE}>:DRATS_ENABLE_TRACE=1>
 )
 target_compile_options(drats_firmware PRIVATE
     ${CPU_FLAGS}

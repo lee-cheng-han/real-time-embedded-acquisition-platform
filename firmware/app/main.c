@@ -13,6 +13,7 @@
 #include "tim2.h"
 #include "watchdog.h"
 #include "sample_timer.h"
+#include "timing_trace.h"
 #include "drats/protocol.h"
 #include "drats/stream_decoder.h"
 #if defined(DRATS_REAL_SENSOR)
@@ -116,6 +117,8 @@ static drats_status_t transmit_block(const drats_sample_block_t *block) {
     if (status == DRATS_OK) {
         status = drats_uart3_write(telemetry_frame, frame_length);
         if (status == DRATS_OK) {
+            drats_timing_trace_record(DRATS_TRACE_UART_SUBMIT,
+                                      (uint16_t)block->sequence_first);
             ++tx_frame_sequence;
         }
     }
@@ -300,6 +303,8 @@ static void acquisition_task(void *argument) {
                                             pdMS_TO_TICKS(5U)) == 0U) {
                     sample_status = DRATS_E_TIMEOUT;
                 } else {
+                    drats_timing_trace_record(DRATS_TRACE_ACQUISITION_WAKE,
+                                              (uint16_t)sample);
                     if (sample == 0U) {
                         timestamp_ns = drats_tim2_now_us() * UINT64_C(1000);
                     }
@@ -323,6 +328,8 @@ static void acquisition_task(void *argument) {
             } else {
                 (void)drats_acq_fail_dma(&acquisition,
                                          sample_status == DRATS_E_TIMEOUT);
+                drats_timing_trace_record(DRATS_TRACE_RECOVERY,
+                                          (uint16_t)(-sample_status));
 #if defined(DRATS_REAL_SENSOR)
                 (void)drats_acq_recovery_result(
                     &acquisition, drats_icm42688_probe(&sensor) == DRATS_OK);
@@ -350,6 +357,8 @@ static void processing_task(void *argument) {
                 (void)drats_block_transition(&block_pool, handle,
                                              DRATS_BLOCK_PROCESSING,
                                              DRATS_BLOCK_TELEMETRY);
+                drats_timing_trace_record(DRATS_TRACE_PROCESSING_COMPLETE,
+                                          handle.index);
                 (void)drats_handle_queue_push(&telemetry_queue, handle);
             }
         }
@@ -510,6 +519,7 @@ int main(void) {
     if (drats_tim2_init(SystemCoreClock) != DRATS_OK) {
         drats_assert_failed(__FILE__, __LINE__);
     }
+    drats_timing_trace_init();
 #if defined(DRATS_ENABLE_WATCHDOG)
     if (drats_watchdog_start(2000U) != DRATS_OK) {
         drats_assert_failed(__FILE__, __LINE__);

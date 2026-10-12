@@ -16,11 +16,13 @@
 | SPI1/GPDMA real-sensor acquisition | selectable | cross-build | no |
 | TIM3-triggered GPDMA acquisition | yes | cross-build | no |
 | 64-bit TIM2 monotonic timestamp | yes | cross-build | no |
+| fixed ISR/task timing trace and decoder | yes | wrap/format/decoder tests and cross-build | no |
 | watchdog supervision policy | yes | host tests | no |
 | IWDG and reset-reason driver | selectable | cross-build | no |
 | redundant persistent configuration records | yes | host power-interruption tests | no |
 | signed update package tooling | yes, OpenSSL ECDSA-P256/SHA-256 | tamper/rollback integration test | n/a |
-| target signed firmware update | metadata/state policy only | host tests with verifier callback | no |
+| target signed-image verification | yes, Mbed TLS ECDSA-P256/SHA-256 | native valid/tamper/rollback test and ARM cross-build | no |
+| target flash programming and A/B selection | no | state policy only | no |
 | redundant boot-state records | yes | exhaustive interrupted-write tests | no |
-| development bootloader handoff | yes, slot A vector/MSP/VTOR handoff | ARM cross-build/vector report | no |
+| authenticated development bootloader | yes, signed metadata plus slot A vector/MSP/VTOR handoff | ARM cross-build, vector report, native verifier integration | no |
 | authenticated production bootloader | no | no | no |

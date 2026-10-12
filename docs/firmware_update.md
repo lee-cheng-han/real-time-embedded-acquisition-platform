@@ -6,8 +6,11 @@ key identifier, and signature. `host/drats/update_image.py` creates and verifies
 ECDSA-P256/SHA-256 packages through OpenSSL. The signature authenticates the format,
 size, semantic version, security counter, algorithm, key identifier, and image digest.
 Integration tests reject payload tampering, metadata tampering, and rollback counters.
-Target-side verification still requires an established embedded library such as Mbed
-TLS; no custom cryptography is used or planned.
+The development bootloader uses a pinned minimal Mbed TLS 3.6.7 build to hash the image,
+reconstruct and hash the authenticated metadata, validate the embedded P-256 public
+point, and verify the DER ECDSA signature. A native integration test compiles and runs
+that same verifier against the signed factory package and requires rejection of image
+tampering, signature tampering, and a higher minimum counter.
 
 The boot state machine is EMPTY -> DOWNLOADING -> VERIFIED -> PENDING -> CONFIRMED.
 Writes update redundant metadata records with generation and CRC after image chunks
@@ -20,12 +23,14 @@ policy. The commit word is written last. Host tests interrupt every prefix write
 every partial commit-word write, require selection of the older committed generation,
 then exercise pending-attempt exhaustion, invalid-slot rollback, and generation wrap.
 
-The build also produces `drats_development_bootloader` at `0x08000000`. It validates
-slot A's stack/reset vectors, disables SysTick and NVIC state, sets VTOR and MSP, and
-branches to the application at `0x08020000`. It intentionally does not authenticate
-the application and is only a board-bring-up bridge. It must be extended with the
-signed-image verifier before any secure-boot claim.
+The build produces `drats_development_bootloader` at `0x08000000`. It reads signed
+metadata from `0x081e0000`, authenticates application A at `0x08020000`, enforces a
+minimum counter of one, validates stack/reset vectors, disables SysTick and NVIC state,
+sets VTOR and MSP, and branches to the application. The build generates an ignored,
+workspace-local development key and compiles only its generated public point into the
+bootloader. This supplies development evidence, not a production root of trust.
 
-Nothing in this repository currently validates secure boot, A/B update, target flash
-programming, anti-rollback, or protected key storage. Host-enforced counter policy is
-not hardware anti-rollback; that requires a protected monotonic store.
+Nothing in this repository currently validates boot on physical hardware, A/B update,
+target flash programming, persistent anti-rollback, bootloader write protection, debug
+lockdown, or protected production key handling. A fixed minimum counter is not hardware
+anti-rollback; that requires a protected monotonic store.

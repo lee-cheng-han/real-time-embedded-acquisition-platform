@@ -20,6 +20,7 @@ add_library(drats_core STATIC
     common/src/protocol.c
     common/src/supervisor.c
     common/src/stream_decoder.c
+    common/src/trace.c
     common/src/update_manager.c
 )
 target_include_directories(drats_core PUBLIC common/include)
@@ -54,6 +55,7 @@ if(DRATS_BUILD_TESTS)
     drats_add_test(unit_protocol_fuzz tests/unit/test_protocol_fuzz.c)
     drats_add_test(unit_stream_sensor tests/unit/test_stream_sensor.c)
     drats_add_test(unit_boot_record tests/unit/test_boot_record.c)
+    drats_add_test(unit_trace tests/unit/test_trace.c)
     drats_add_test(integration_pipeline tests/integration/test_pipeline.c)
     drats_add_test(fault_injection tests/fault_injection/test_faults.c)
     drats_add_test(endurance_pipeline tests/endurance/test_endurance.c)
@@ -69,4 +71,9 @@ if(DRATS_BUILD_TESTS)
              COMMAND ${Python3_EXECUTABLE}
                      ${CMAKE_CURRENT_SOURCE_DIR}/tests/integration/test_signed_image.py)
     set_tests_properties(integration_signed_image PROPERTIES TIMEOUT 30)
+    add_test(NAME integration_timing_trace
+             COMMAND ${Python3_EXECUTABLE}
+                     ${CMAKE_CURRENT_SOURCE_DIR}/tests/integration/test_timing_trace.py
+                     ${CMAKE_CURRENT_SOURCE_DIR}/scripts/decode_timing_trace.py)
+    set_tests_properties(integration_timing_trace PROPERTIES TIMEOUT 30)
 endif()

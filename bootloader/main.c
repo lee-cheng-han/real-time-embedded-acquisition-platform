@@ -1,5 +1,7 @@
 #include "stm32h563xx.h"
 #include "drats/boot_vector.h"
+#include "development_public_key.h"
+#include "image_verify.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -10,6 +12,8 @@ enum {
     SRAM_ORIGIN = 0x20000000U,
     SRAM_LIMIT = 0x200a0000U
 };
+
+#define IMAGE_METADATA_ADDRESS UINT32_C(0x081e0000)
 
 __attribute__((noreturn)) static void halt(void) {
     __disable_irq();
@@ -50,11 +54,17 @@ __attribute__((noreturn)) static void launch_application(
 int main(void) {
     const uint32_t *const vectors =
         (const uint32_t *)(uintptr_t)APPLICATION_ORIGIN;
-    if (drats_boot_vector_validate(vectors[0], vectors[1],
+    const drats_image_metadata_t *const metadata =
+        (const drats_image_metadata_t *)(uintptr_t)IMAGE_METADATA_ADDRESS;
+    if (!drats_boot_verify_image(
+            metadata, (const uint8_t *)(uintptr_t)APPLICATION_ORIGIN,
+            APPLICATION_LIMIT - APPLICATION_ORIGIN, 1U,
+            drats_development_public_key, drats_development_key_id) ||
+        (drats_boot_vector_validate(vectors[0], vectors[1],
                                    APPLICATION_ORIGIN,
                                    APPLICATION_LIMIT - APPLICATION_ORIGIN,
                                    SRAM_ORIGIN,
-                                   SRAM_LIMIT - SRAM_ORIGIN) != DRATS_OK) {
+                                   SRAM_LIMIT - SRAM_ORIGIN) != DRATS_OK)) {
         halt();
     }
     launch_application(vectors);

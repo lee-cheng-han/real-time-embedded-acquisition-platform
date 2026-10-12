@@ -6,6 +6,9 @@ build_dir="${project_root}/build/bootloader"
 
 command -v arm-none-eabi-gcc >/dev/null
 "${project_root}/scripts/fetch_deps.sh"
+python3 "${project_root}/scripts/prepare_development_keys.py" \
+  --output-dir "${project_root}/build/keys" \
+  --header "${project_root}/build/generated/development_public_key.h"
 
 generator_args=()
 if [[ ! -f "${build_dir}/CMakeCache.txt" ]] && command -v ninja >/dev/null; then

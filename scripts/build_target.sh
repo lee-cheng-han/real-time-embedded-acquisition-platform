@@ -5,6 +5,7 @@ project_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 build_dir="${DRATS_BUILD_DIR:-${project_root}/build/target}"
 real_sensor="${DRATS_REAL_SENSOR:-OFF}"
 watchdog="${DRATS_ENABLE_WATCHDOG:-OFF}"
+trace="${DRATS_ENABLE_TRACE:-OFF}"
 
 command -v arm-none-eabi-gcc >/dev/null
 "${project_root}/scripts/fetch_deps.sh"
@@ -18,6 +19,7 @@ cmake -S "${project_root}/firmware" -B "${build_dir}" \
   -DCMAKE_TOOLCHAIN_FILE="${project_root}/firmware/cmake/arm-none-eabi-gcc.cmake" \
   -DDRATS_REAL_SENSOR="${real_sensor}" \
   -DDRATS_ENABLE_WATCHDOG="${watchdog}" \
+  -DDRATS_ENABLE_TRACE="${trace}" \
   -DCMAKE_BUILD_TYPE=Release
 cmake --build "${build_dir}"
 python3 "${project_root}/scripts/check_size.py" \

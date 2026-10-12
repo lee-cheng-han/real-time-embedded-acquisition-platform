@@ -1,6 +1,7 @@
 #include "sample_timer.h"
 
 #include "stm32h563xx.h"
+#include "timing_trace.h"
 
 #include <stdbool.h>
 
@@ -58,6 +59,7 @@ void drats_sample_timer_irq(void) {
         return;
     }
     TIM3->SR &= ~TIM_SR_UIF;
+    drats_timing_trace_record(DRATS_TRACE_SAMPLE_TRIGGER, 0U);
     BaseType_t higher_priority_woken = pdFALSE;
     if (target_task != NULL) {
         vTaskNotifyGiveIndexedFromISR(target_task, 0U,

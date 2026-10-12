@@ -13,19 +13,23 @@ standalone image for address `0x08000000`.
 | STM32CubeH5 CMSIS core | `e5c73ea1bbe384cdadb0cf161ae97a0157990766` |
 | CMSIS Device H5 v1.7.0 | `884b8dc78e41cbfca008363342b17f4a9e8641f7` |
 | FreeRTOS-Kernel | `8be86d4a24fd4091f8f4192018423ab590f408db` |
+| Mbed TLS 3.6.7 | `068ff080b369adfac81509f9b57b2afabaf82dc5` |
 
 The build uses Cortex-M33 Thumb soft-float flags, function/data sections, garbage
 collection, strict warnings, newlib-nano, and static FreeRTOS allocation. It produces
 ELF, BIN, HEX and linker map files. `scripts/check_size.py` enforces a 768 KiB flash-slot
 limit and the architecture's 128 KiB initial RAM budget, writing `size-report.json`.
 
-`scripts/build_bootloader.sh` builds a separate development handoff image at
-`0x08000000`. It occupies 1,332 flash bytes in the reserved 128 KiB partition and its
+`scripts/build_bootloader.sh` builds a separate authenticated development image at
+`0x08000000`. It occupies 29,420 flash bytes in the reserved 128 KiB partition and its
 post-build report verifies the initial stack pointer, Thumb reset vector, vector-table
-origin, reset symbol, and partition bound. It performs vector sanity checks only and is
-not the authenticated update bootloader described in `firmware_update.md`.
-`scripts/check_all.sh` also creates a validated, SHA-256-reported factory binary with
-the development bootloader at offset zero and application A at offset `0x20000`.
+origin, reset symbol, and partition bound. Before handoff it verifies signed image
+metadata with Mbed TLS and rejects an invalid digest, key ID, signature, layout, or
+counter. `scripts/check_all.sh` creates a validated, SHA-256-reported factory binary
+with the bootloader at offset zero, application A at `0x20000`, and signed metadata at
+`0x1e0000`, then runs the same embedded verifier as a native integration test. It emits
+both simulator and sensor/watchdog/trace factory images; the latter is the artifact for
+the hardware runbook.
 
 The default application uses a configurable simulated six-channel backend. It exercises
 the block pool, processing handoff, telemetry encoder, and bounded USART3 TX/RX rings. The
@@ -33,8 +37,9 @@ register-level UART mapping is USART3 on PD8/PD9 AF7, as specified for the Nucle
 COM1 port by ST's board support package. No physical execution has been claimed.
 
 Set `DRATS_REAL_SENSOR=ON` to build the ICM-42688-P backend and
-`DRATS_ENABLE_WATCHDOG=ON` to include IWDG activation. `scripts/check_all.sh` builds
-this combination separately under `build/target-sensor`. It samples the sensor at
+`DRATS_ENABLE_WATCHDOG=ON` to include IWDG activation. `DRATS_ENABLE_TRACE=ON` adds a
+6,168-byte fixed timing ring for SWD extraction. `scripts/check_all.sh` builds this
+combination separately under `build/target-sensor`. It samples the sensor at
 1 ksample/s from TIM3 notifications through bounded register-level SPI/GPDMA transfers
 and timestamps blocks with a 1 MHz TIM2 counter. Timer and DMA completion use separate
 indexed task notifications. The path is cross-compiled only and needs board validation.

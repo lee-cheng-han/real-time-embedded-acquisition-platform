@@ -1,4 +1,4 @@
-name: verification
+name: Verification
 
 on:
   push:
@@ -10,17 +10,15 @@ permissions:
 jobs:
   host-and-target:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
-      - name: Install build tools
+      - name: Install ARM build tools
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build gcc-arm-none-eabi libnewlib-arm-none-eabi
-      - name: Host verification
-        run: ./scripts/test.sh
-      - name: STM32H563 cross-build
-        run: ./scripts/build_target.sh
+      - name: Run complete verification
+        run: ./scripts/check_all.sh
       - name: Upload machine-readable evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -28,7 +26,12 @@ jobs:
           name: drats-verification
           path: |
             build/host/test-results.xml
+            build/host/boot-verifier-report.json
+            build/host/sensor-boot-verifier-report.json
             build/target/size-report.json
-            build/target/drats_firmware.map
-            build/target/drats_firmware.hex
-            build/target/drats_firmware.bin
+            build/target/target-report.json
+            build/target-sensor/size-report.json
+            build/target-sensor/target-report.json
+            build/bootloader/target-report.json
+            build/factory/factory-report.json
+            build/factory/sensor-factory-report.json

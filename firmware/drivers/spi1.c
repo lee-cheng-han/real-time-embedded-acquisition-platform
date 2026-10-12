@@ -3,6 +3,7 @@
 #include "stm32h563xx.h"
 #include "FreeRTOS.h"
 #include "task.h"
+#include "timing_trace.h"
 
 #include <stdbool.h>
 
@@ -220,6 +221,8 @@ void drats_spi1_dma_irq(void) {
     }
     dma_result = (((rx_status | tx_status) & errors) != 0U) ?
                  DRATS_E_IO : DRATS_OK;
+    drats_timing_trace_record(DRATS_TRACE_DMA_COMPLETE,
+                              (uint16_t)(dma_result == DRATS_OK ? 0U : 1U));
     dma_abort();
     __DMB();
     __DSB();
